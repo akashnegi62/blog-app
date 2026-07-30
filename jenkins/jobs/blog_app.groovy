@@ -48,7 +48,7 @@ pipelineJob('Blogs/blog_app') {
             }
 
 
-            scriptPath('generated/jenkinsfiles/blog_app/Jenkinsfile')
+            scriptPath('generated/blog_app/Jenkinsfile')
 
 
         }

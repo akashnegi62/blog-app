@@ -2,34 +2,47 @@ pipeline {
 
     agent any
 
-
     stages {
 
-
-        stage('Generate Jobs') {
-
-
+        stage('Checkout') {
             steps {
-
-
-                jobDsl(
-
-                    targets: 'jenkins/jobs/*.groovy',
-
-                    removedJobAction: 'IGNORE',
-
-                    removedViewAction: 'IGNORE'
-
-                )
-
-
+                checkout scm
             }
-
-
         }
 
+        stage('Generate Jenkins Files') {
+            steps {
+                sh '''
+                python3 scripts/onboard.py projects/blog-app.yml
+                '''
+            }
+        }
+
+        stage('Generate Jobs') {
+            steps {
+
+                jobDsl(
+                    targets: 'jenkins/jobs/*.groovy',
+                    removedJobAction: 'DELETE',
+                    removedViewAction: 'DELETE',
+                    lookupStrategy: 'JENKINS_ROOT'
+                )
+
+            }
+        }
 
     }
 
+    post {
+
+        success {
+            echo "Seed Job Completed"
+        }
+
+        failure {
+            echo "Seed Job Failed"
+        }
+
+    }
 
 }
