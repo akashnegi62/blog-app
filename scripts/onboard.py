@@ -63,7 +63,7 @@ pipeline = (
             .replace("{{KEY_NAME}}", aws["keyName"])
 )
 
-output_dir = f"generated/jenkinsfiles/{project['name']}"
+output_dir = f"generated/{project['name']}"
 
 os.makedirs(
     output_dir,
