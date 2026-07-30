@@ -30,16 +30,16 @@ pipelineJob('Blogs/blog_app') {
                     remote {
 
 
-                        url('https://github.com/akashnegi62/devops-platform.git')
+                        url('https://github.com/akashnegi62/blog-app.git')
 
 
-                        credentials('github-token')
+                        credentials('{{CREDENTIALS}}')
 
 
                     }
 
 
-                    branch('main')
+                    branch('{{BRANCH}}')
 
 
                 }
