@@ -4,9 +4,9 @@ project:
   folder: Blogs
 
 github:
-  repo: https://github.com/akashnegi62/blog-app.git
+  app_repo: https://github.com/akashnegi62/blog-app.git
 
-  branch: main
+  app_branch: main
 
 docker:
   image: deepacode/blog-app

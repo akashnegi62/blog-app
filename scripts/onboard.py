@@ -18,9 +18,10 @@ docker = data["docker"]
 aws = data["aws"]
 jenkins = data["jenkins"]
 
-# -----------------------------
-# Create Jenkins Job DSL
-# -----------------------------
+# ---------------------------------------
+# Generate Jenkins Job DSL
+# ---------------------------------------
+
 dsl_template = "jenkins/jobs/pipelineJob.groovy.template"
 
 with open(dsl_template, "r") as f:
@@ -29,9 +30,9 @@ with open(dsl_template, "r") as f:
 job = (
     job.replace("{{FOLDER}}", project["folder"])
        .replace("{{NAME}}", project["name"])
-       .replace("{{REPO}}", github["repo"])
-       .replace("{{BRANCH}}", github["branch"])
-       .replace("{{CREDENTIALS}}", jenkins["credentialsId"])
+       .replace("{{APP_REPO}}", github["repo"])
+       .replace("{{APP_BRANCH}}", github["branch"])
+       .replace("{{GITHUB_CREDENTIALS}}", jenkins["credentialsId"])
 )
 
 os.makedirs("jenkins/jobs", exist_ok=True)
@@ -43,9 +44,10 @@ with open(dsl_output, "w") as f:
 
 print(f"✔ Jenkins Job DSL created : {dsl_output}")
 
-# -----------------------------
-# Create Jenkinsfile
-# -----------------------------
+# ---------------------------------------
+# Generate Jenkinsfile
+# ---------------------------------------
+
 jenkinsfile_template = "templates/Jenkinsfile.template"
 
 with open(jenkinsfile_template, "r") as f:
@@ -53,9 +55,6 @@ with open(jenkinsfile_template, "r") as f:
 
 pipeline = (
     pipeline.replace("{{PROJECT_NAME}}", project["name"])
-            .replace("{{APP_REPO}}", github["repo"])
-            .replace("{{APP_BRANCH}}", github["branch"])
-            .replace("{{GITHUB_CREDENTIALS}}", jenkins["credentialsId"])
             .replace("{{DOCKER_IMAGE}}", docker["image"])
             .replace("{{STACK_NAME}}", aws["stackName"])
             .replace("{{REGION}}", aws["region"])
@@ -65,10 +64,7 @@ pipeline = (
 
 output_dir = f"generated/{project['name']}"
 
-os.makedirs(
-    output_dir,
-    exist_ok=True
-)
+os.makedirs(output_dir, exist_ok=True)
 
 jenkinsfile_output = f"{output_dir}/Jenkinsfile"
 

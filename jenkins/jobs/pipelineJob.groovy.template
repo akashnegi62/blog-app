@@ -30,7 +30,7 @@ pipelineJob('{{FOLDER}}/{{NAME}}') {
                     remote {
 
 
-                        url('https://github.com/akashnegi62/blog-app.git')
+                        url('{{APP_REPO}}')
 
 
                         credentials('{{CREDENTIALS}}')
