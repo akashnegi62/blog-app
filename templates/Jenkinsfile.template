@@ -1,0 +1,316 @@
+pipeline {
+
+    agent any
+
+    environment {
+
+        IMAGE = "{{DOCKER_IMAGE}}:latest"
+
+        STACK_NAME = "{{STACK_NAME}}"
+        REGION = "{{REGION}}"
+
+    }
+
+    stages {
+
+        stage('Checkout Repository') {
+
+            steps {
+
+                checkout scm
+
+            }
+
+        }
+
+        stage('Create / Update EC2') {
+
+            steps {
+
+                withAWS(credentials: 'aws-creds', region: "${REGION}") {
+
+                    sh """
+                    set -e
+
+                    aws cloudformation deploy \
+                        --stack-name ${STACK_NAME} \
+                        --template-file cloudformation/ec2.yaml \
+                        --parameter-overrides \
+                            KeyName={{KEY_NAME}} \
+                            InstanceType={{INSTANCE_TYPE}}
+                    """
+
+                }
+
+            }
+
+        }
+
+        stage('Wait for EC2') {
+
+            steps {
+
+                echo "Waiting for EC2..."
+
+                sleep(time: 60, unit: 'SECONDS')
+
+            }
+
+        }
+
+        stage('Get EC2 Public IP') {
+
+            steps {
+
+                withAWS(credentials: 'aws-creds', region: "${REGION}") {
+
+                    script {
+
+                        env.SERVER_IP = sh(
+                            script: """
+                            aws cloudformation describe-stacks \
+                                --stack-name ${STACK_NAME} \
+                                --query "Stacks[0].Outputs[?OutputKey=='PublicIP'].OutputValue" \
+                                --output text
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                    }
+
+                }
+
+                echo "EC2 Public IP : ${SERVER_IP}"
+
+            }
+
+        }
+
+        stage('Verify Application') {
+
+            steps {
+
+                sh '''
+                set -e
+
+                echo "Workspace"
+
+                pwd
+
+                echo ""
+
+                ls -la
+
+                echo ""
+
+                if [ ! -f Dockerfile ]; then
+                    echo "ERROR: Dockerfile not found."
+                    exit 1
+                fi
+
+                echo "Dockerfile found."
+                '''
+
+            }
+
+        }
+
+        stage('Build Docker Image') {
+
+            steps {
+
+                sh """
+                set -e
+
+                docker build \
+                    -t ${IMAGE} \
+                    .
+                """
+
+            }
+
+        }
+
+        stage('Push Docker Image') {
+
+            steps {
+
+                withCredentials([
+
+                    usernamePassword(
+                        credentialsId: 'dockerhub',
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASS'
+                    )
+
+                ]) {
+
+                    sh """
+                    set -e
+
+                    echo \$DOCKER_PASS | docker login \
+                        -u \$DOCKER_USER \
+                        --password-stdin
+
+                    docker push ${IMAGE}
+
+                    docker logout
+                    """
+
+                }
+
+            }
+
+        }
+
+        stage('Wait for SSH') {
+
+            steps {
+
+                echo "Waiting for SSH..."
+
+                sleep(time: 30, unit: 'SECONDS')
+
+            }
+
+        }
+
+        stage('Install Docker on EC2') {
+
+            steps {
+
+                withCredentials([
+
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+
+                ]) {
+
+                    sh '''
+                    set -e
+
+                    ssh -i "$SSH_KEY" \
+                        -o StrictHostKeyChecking=no \
+                        "$SSH_USER@$SERVER_IP" << 'EOF'
+
+                    set -e
+
+                    if ! command -v docker >/dev/null 2>&1; then
+
+                        echo "Installing Docker..."
+
+                        sudo apt-get update
+
+                        sudo apt-get install -y docker.io
+
+                        sudo systemctl enable docker
+
+                        sudo systemctl start docker
+
+                        sudo usermod -aG docker ubuntu || true
+
+                    else
+
+                        echo "Docker already installed."
+
+                    fi
+
+                    sudo docker --version
+
+EOF
+                    '''
+
+                }
+
+            }
+
+        }
+
+        stage('Deploy to EC2') {
+
+            steps {
+
+                withCredentials([
+
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-key',
+                        keyFileVariable: 'SSH_KEY',
+                        usernameVariable: 'SSH_USER'
+                    )
+
+                ]) {
+
+                    sh """
+                    set -e
+
+                    ssh -i "\$SSH_KEY" \
+                        -o StrictHostKeyChecking=no \
+                        "\$SSH_USER@${SERVER_IP}" << 'EOF'
+
+                    set -e
+
+                    echo "Pulling latest image..."
+
+                    sudo docker pull ${IMAGE}
+
+                    echo "Stopping old container..."
+
+                    sudo docker stop {{PROJECT_NAME}} || true
+
+                    sudo docker rm {{PROJECT_NAME}} || true
+
+                    echo "Starting new container..."
+
+                    sudo docker run -d \
+                        --name {{PROJECT_NAME}} \
+                        --restart unless-stopped \
+                        -p 3000:3000 \
+                        ${IMAGE}
+
+                    echo "Cleaning unused images..."
+
+                    sudo docker image prune -f
+
+                    echo ""
+
+                    echo "Running Containers"
+
+                    sudo docker ps
+
+EOF
+                    """
+
+                }
+
+            }
+
+        }
+
+    }
+
+    post {
+
+        success {
+
+            echo "====================================="
+            echo "Deployment Successful"
+            echo "Application URL"
+            echo "http://${SERVER_IP}:3000"
+            echo "====================================="
+
+        }
+
+        failure {
+
+            echo "====================================="
+            echo "Deployment Failed"
+            echo "====================================="
+
+        }
+
+    }
+
+}

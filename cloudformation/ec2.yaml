@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: Application EC2 Server
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: jenkins-key
+    Description: Existing EC2 key pair name
+
+  InstanceType:
+    Type: String
+    Default: t3.micro
+    Description: EC2 Free Tier instance type
+
+  AMI:
+    Type: AWS::EC2::Image::Id
+    Default: ami-01a00762f46d584a1
+    Description: Ubuntu Server 26.04 LTS AMI 
+
+Resources:
+  AppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+
+    Properties:
+      GroupDescription: Allow SSH and App
+
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+
+          FromPort: 22
+
+          ToPort: 22
+
+          CidrIp: 0.0.0.0/0
+
+        - IpProtocol: tcp
+
+          FromPort: 3000
+
+          ToPort: 3000
+
+          CidrIp: 0.0.0.0/0
+
+  AppInstance:
+    Type: AWS::EC2::Instance
+
+    Properties:
+      ImageId: ami-0f58b397bc5c1f2e8
+
+      InstanceType: !Ref InstanceType
+
+      KeyName: !Ref KeyName
+
+      SecurityGroupIds:
+        - !Ref AppSecurityGroup
+
+      UserData:
+        Fn::Base64: |
+
+          #!/bin/bash
+
+
+          apt update -y
+
+
+          apt install docker.io -y
+
+
+          systemctl start docker
+
+
+          systemctl enable docker
+
+      Tags:
+        - Key: Name
+
+          Value: application-server
+
+Outputs:
+  PublicIP:
+    Value: !GetAtt AppInstance.PublicIp

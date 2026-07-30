@@ -1,0 +1,35 @@
+pipeline {
+
+    agent any
+
+
+    stages {
+
+
+        stage('Generate Jobs') {
+
+
+            steps {
+
+
+                jobDsl(
+
+                    targets: 'jenkins/jobs/*.groovy',
+
+                    removedJobAction: 'IGNORE',
+
+                    removedViewAction: 'IGNORE'
+
+                )
+
+
+            }
+
+
+        }
+
+
+    }
+
+
+}

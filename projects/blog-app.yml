@@ -1,0 +1,29 @@
+project:
+  name: blog_app
+
+  folder: Blogs
+
+github:
+  repo: https://github.com/akashnegi62/blog-app.git
+
+  branch: main
+
+docker:
+  image: deepacode/blog-app
+
+aws:
+  region: ap-south-1
+
+  stackName: blog-app-stack
+
+  AMI:
+    Type: AWS::EC2::Image::Id
+    Default: ami-01a00762f46d584a1
+    Description: Ubuntu Server 26.04 LTS AMI
+
+  instanceType: t3.micro
+
+  keyName: jenkins-key
+
+jenkins:
+  credentialsId: github-token
