@@ -2,7 +2,6 @@ import yaml
 import sys
 import os
 
-
 if len(sys.argv) != 2:
     print("Usage: python onboard.py projects/<project>.yml")
     sys.exit(1)
@@ -18,13 +17,13 @@ docker = data["docker"]
 aws = data["aws"]
 jenkins = data["jenkins"]
 
-# ---------------------------------------
+# -----------------------------
 # Generate Jenkins Job DSL
-# ---------------------------------------
+# -----------------------------
 
 dsl_template = "jenkins/jobs/pipelineJob.groovy.template"
 
-with open(dsl_template, "r") as f:
+with open(dsl_template) as f:
     job = f.read()
 
 job = (
@@ -44,13 +43,13 @@ with open(dsl_output, "w") as f:
 
 print(f"✔ Jenkins Job DSL created : {dsl_output}")
 
-# ---------------------------------------
+# -----------------------------
 # Generate Jenkinsfile
-# ---------------------------------------
+# -----------------------------
 
-jenkinsfile_template = "templates/Jenkinsfile.template"
+template = "templates/Jenkinsfile.template"
 
-with open(jenkinsfile_template, "r") as f:
+with open(template) as f:
     pipeline = f.read()
 
 pipeline = (
@@ -63,15 +62,12 @@ pipeline = (
 )
 
 output_dir = f"generated/{project['name']}"
-
 os.makedirs(output_dir, exist_ok=True)
 
-jenkinsfile_output = f"{output_dir}/Jenkinsfile"
-
-with open(jenkinsfile_output, "w") as f:
+with open(f"{output_dir}/Jenkinsfile", "w") as f:
     f.write(pipeline)
 
-print(f"✔ Jenkinsfile created : {jenkinsfile_output}")
+print(f"✔ Jenkinsfile created : {output_dir}/Jenkinsfile")
 
 print("\n====================================")
 print(f"Project : {project['name']}")

@@ -6,55 +6,36 @@ folder('{{FOLDER}}') {
 
 }
 
-
 pipelineJob('{{FOLDER}}/{{NAME}}') {
 
-
-    description(
-        'Generated automatically by DevOps Platform'
-    )
-
+    description('Generated automatically by DevOps Platform')
 
     definition {
 
-
         cpsScm {
-
 
             scm {
 
-
                 git {
-
 
                     remote {
 
-
                         url('{{APP_REPO}}')
 
-
-                        credentials('{{CREDENTIALS}}')
-
+                        credentials('{{GITHUB_CREDENTIALS}}')
 
                     }
 
-
-                    branch('{{BRANCH}}')
-
+                    branch('{{APP_BRANCH}}')
 
                 }
 
-
             }
-
 
             scriptPath('generated/{{NAME}}/Jenkinsfile')
 
-
         }
 
-
     }
-
 
 }
