@@ -50,7 +50,7 @@ pipeline {
 
             steps {
 
-                echo "Waiting for EC2..."
+                echo "Waiting for EC2 and Elastic IP..."
 
                 sleep(time: 60, unit: 'SECONDS')
 
@@ -58,7 +58,7 @@ pipeline {
 
         }
 
-        stage('Get EC2 Public IP') {
+        stage('Get Elastic IP') {
 
             steps {
 
@@ -70,17 +70,21 @@ pipeline {
                             script: """
                             aws cloudformation describe-stacks \
                                 --stack-name ${STACK_NAME} \
-                                --query "Stacks[0].Outputs[?OutputKey=='PublicIP'].OutputValue" \
+                                --query "Stacks[0].Outputs[?OutputKey=='ElasticIP'].OutputValue" \
                                 --output text
                             """,
                             returnStdout: true
                         ).trim()
 
+                        if (!env.SERVER_IP || env.SERVER_IP == "None") {
+                            error("Elastic IP not found in CloudFormation outputs.")
+                        }
+
                     }
 
                 }
 
-                echo "EC2 Public IP : ${SERVER_IP}"
+                echo "Elastic IP : ${SERVER_IP}"
 
             }
 
@@ -94,11 +98,9 @@ pipeline {
                 set -e
 
                 echo "Workspace"
-
                 pwd
 
                 echo ""
-
                 ls -la
 
                 echo ""
@@ -252,11 +254,11 @@ EOF
 
                     set -e
 
-                    echo "Pulling latest image..."
+                    echo "Pulling latest Docker image..."
 
                     sudo docker pull ${IMAGE}
 
-                    echo "Stopping old container..."
+                    echo "Stopping existing container..."
 
                     sudo docker stop {{PROJECT_NAME}} || true
 
@@ -275,7 +277,6 @@ EOF
                     sudo docker image prune -f
 
                     echo ""
-
                     echo "Running Containers"
 
                     sudo docker ps
@@ -297,8 +298,8 @@ EOF
 
             echo "====================================="
             echo "Deployment Successful"
-            echo "Application URL"
-            echo "http://${SERVER_IP}:3000"
+            echo "Elastic IP : ${SERVER_IP}"
+            echo "Application URL : http://${SERVER_IP}:3000"
             echo "====================================="
 
         }

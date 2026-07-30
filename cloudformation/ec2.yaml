@@ -6,47 +6,43 @@ Parameters:
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Default: jenkins-key
-    Description: Existing EC2 key pair name
+    Description: Existing EC2 Key Pair
 
   InstanceType:
     Type: String
     Default: t3.micro
-    Description: EC2 Free Tier instance type
+    Description: EC2 Instance Type
 
   AMI:
     Type: AWS::EC2::Image::Id
     Default: ami-01a00762f46d584a1
-    Description: Ubuntu Server 26.04 LTS AMI 
+    Description: Ubuntu Server 26.04 LTS AMI
 
 Resources:
+
   AppSecurityGroup:
     Type: AWS::EC2::SecurityGroup
 
     Properties:
-      GroupDescription: Allow SSH and App
+      GroupDescription: Allow SSH and Application Access
 
       SecurityGroupIngress:
+
         - IpProtocol: tcp
-
           FromPort: 22
-
           ToPort: 22
-
           CidrIp: 0.0.0.0/0
 
         - IpProtocol: tcp
-
           FromPort: 3000
-
           ToPort: 3000
-
           CidrIp: 0.0.0.0/0
 
   AppInstance:
     Type: AWS::EC2::Instance
 
     Properties:
-      ImageId: ami-0f58b397bc5c1f2e8
+      ImageId: !Ref AMI
 
       InstanceType: !Ref InstanceType
 
@@ -57,26 +53,51 @@ Resources:
 
       UserData:
         Fn::Base64: |
-
           #!/bin/bash
 
+          apt-get update -y
 
-          apt update -y
-
-
-          apt install docker.io -y
-
-
-          systemctl start docker
-
+          apt-get install -y docker.io
 
           systemctl enable docker
 
+          systemctl start docker
+
       Tags:
         - Key: Name
-
           Value: application-server
 
+  ElasticIP:
+    Type: AWS::EC2::EIP
+
+    Properties:
+      Domain: vpc
+
+      Tags:
+        - Key: Name
+          Value: application-eip
+
+  ElasticIPAssociation:
+    Type: AWS::EC2::EIPAssociation
+
+    Properties:
+      AllocationId: !GetAtt ElasticIP.AllocationId
+
+      InstanceId: !Ref AppInstance
+
 Outputs:
-  PublicIP:
-    Value: !GetAtt AppInstance.PublicIp
+
+  InstanceId:
+    Description: EC2 Instance ID
+
+    Value: !Ref AppInstance
+
+  ElasticIP:
+    Description: Elastic IP Address
+
+    Value: !Ref ElasticIP
+
+  PublicDNS:
+    Description: Public DNS Name
+
+    Value: !GetAtt AppInstance.PublicDnsName
