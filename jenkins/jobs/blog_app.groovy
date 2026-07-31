@@ -32,7 +32,7 @@ pipelineJob('Blogs/blog_app') {
 
             }
 
-            scriptPath('generated/blog_app/Jenkinsfile')
+            scriptPath('Jenkinsfile')
 
         }
 
