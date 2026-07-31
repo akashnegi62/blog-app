@@ -61,13 +61,12 @@ pipeline = (
             .replace("{{KEY_NAME}}", aws["keyName"])
 )
 
-output_dir = f"generated/{project['name']}"
-os.makedirs(output_dir, exist_ok=True)
+output_file = "Jenkinsfile"
 
-with open(f"{output_dir}/Jenkinsfile", "w") as f:
+with open(output_file, "w") as f:
     f.write(pipeline)
 
-print(f"✔ Jenkinsfile created : {output_dir}/Jenkinsfile")
+print(f"✔ Jenkinsfile created: {output_file}")
 
 print("\n====================================")
 print(f"Project : {project['name']}")
