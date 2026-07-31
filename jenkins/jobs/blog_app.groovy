@@ -37,5 +37,10 @@ pipelineJob('Blogs/blog_app') {
         }
 
     }
+    triggers {
+
+        githubPush()
+
+    }
 
 }
