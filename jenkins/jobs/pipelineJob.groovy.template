@@ -32,7 +32,7 @@ pipelineJob('{{FOLDER}}/{{NAME}}') {
 
             }
 
-            scriptPath('generated/{{NAME}}/Jenkinsfile')
+            scriptPath('Jenkinsfile')
 
         }
 
